@@ -1,0 +1,235 @@
+/* TLS Downgrade Analyzer – Dashboard Styles */
+
+:root {
+    --grade-a-plus: #27ae60;
+    --grade-a: #2ecc71;
+    --grade-b: #3498db;
+    --grade-c: #f39c12;
+    --grade-d: #e67e22;
+    --grade-f: #e74c3c;
+    --bg-surface: #1a1d23;
+    --bg-card: #21252b;
+}
+
+body {
+    background: var(--bg-surface);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+/* Device cards */
+.device-card {
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+}
+.device-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+}
+
+.grade-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.grade-a-plus { background: var(--grade-a-plus); color: #fff; }
+.grade-a      { background: var(--grade-a);      color: #fff; }
+.grade-b      { background: var(--grade-b);      color: #fff; }
+.grade-c      { background: var(--grade-c);      color: #fff; }
+.grade-d      { background: var(--grade-d);      color: #fff; }
+.grade-f      { background: var(--grade-f);      color: #fff; }
+
+.risk-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.risk-critical { background: rgba(231,76,60,0.2);  color: #e74c3c; }
+.risk-high     { background: rgba(230,126,34,0.2); color: #e67e22; }
+.risk-medium   { background: rgba(243,156,18,0.2); color: #f39c12; }
+.risk-low      { background: rgba(46,204,113,0.2); color: #2ecc71; }
+.risk-minimal  { background: rgba(39,174,96,0.2);  color: #27ae60; }
+
+/* Version pills */
+.version-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.version-supported {
+    background: rgba(46,204,113,0.15);
+    color: #2ecc71;
+}
+.version-unsupported {
+    background: rgba(149,165,166,0.1);
+    color: #666;
+}
+
+/* Cipher table in detail view */
+.cipher-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+}
+.cipher-row:nth-child(odd) {
+    background: rgba(255,255,255,0.03);
+}
+.cipher-grade {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-right: 10px;
+}
+
+/* Risk meter */
+.risk-meter {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #2ecc71 0%, #f39c12 50%, #e74c3c 100%);
+    position: relative;
+}
+.risk-needle {
+    width: 4px;
+    height: 16px;
+    background: #fff;
+    border-radius: 2px;
+    position: absolute;
+    top: -4px;
+    transition: left 0.5s ease;
+}
+
+/* Finding list */
+.finding-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+}
+.finding-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Protection check items */
+.protection-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+.check-pass { background: rgba(46,204,113,0.1); }
+.check-fail { background: rgba(231,76,60,0.1); }
+.check-icon {
+    font-size: 1.1rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* Chart containers */
+.card-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+/* Attack flow diagram */
+.attack-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    flex-wrap: wrap;
+}
+.attack-node {
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 100px;
+}
+.attack-arrow {
+    font-size: 1.2rem;
+    color: #666;
+}
+
+/* Scan modal */
+.scan-type-card {
+    transition: all 0.2s ease;
+    border-width: 2px !important;
+}
+.scan-type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.scan-type-card.border-primary {
+    box-shadow: 0 0 0 1px rgba(13,110,253,0.3), 0 4px 15px rgba(13,110,253,0.15);
+}

@@ -1,0 +1,41 @@
+# Secrets - NEVER commit
+.env
+*.pem
+*.key
+*.p12
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated outputs
+TLS_Downgrade_Analysis_Report.pdf
+sample_results/
+
+# Logs
+logs/
+*.log
+security.log

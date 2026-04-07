@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLS Downgrade &amp; Cipher Suite Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg border-bottom bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <i class="bi bi-shield-lock-fill text-primary"></i>
+            <span class="fw-bold">TLS Downgrade Analyzer</span>
+        </a>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-success bg-opacity-10 text-success me-2">
+                <i class="bi bi-shield-lock"></i> Authenticated
+            </span>
+            <button class="btn btn-sm btn-outline-success" onclick="loadResults()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#scanModal">
+                <i class="bi bi-search"></i> New Scan
+            </button>
+            <a href="/logout" class="btn btn-sm btn-outline-danger" title="Sign out">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container-fluid px-4 py-3">
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4" id="summaryCards">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Devices Scanned</div>
+                            <div class="display-6 fw-bold" id="totalDevices">0</div>
+                        </div>
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Vulnerable to Downgrade</div>
+                            <div class="display-6 fw-bold text-danger" id="vulnerableCount">0</div>
+                        </div>
+                        <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">TLS 1.3 Supported</div>
+                            <div class="display-6 fw-bold text-success" id="tls13Count">0</div>
+                        </div>
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-muted small">Avg. Risk Score</div>
+                            <div class="display-6 fw-bold" id="avgRisk">0</div>
+                        </div>
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-pie-chart"></i> Risk Distribution</div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="riskChart" style="max-height:260px"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-bar-chart"></i> TLS Version Support</div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="versionChart" style="max-height:260px"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-shield-exclamation"></i> Vulnerability Flags</div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="vulnChart" style="max-height:260px"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three-Profile Cipher Selection (Term Paper Core Experiment) -->
+    <div id="profileSection" class="mb-4" style="display:none">
+        <h5 class="mb-3"><i class="bi bi-people"></i> Three-Profile Cipher Selection (Term Paper Experiment)</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-dark">
+                <small class="text-muted">"Will IoT servers USE weak ciphers when strong ones are also available?"</small>
+            </div>
+            <div class="card-body" id="profileBody"></div>
+        </div>
+    </div>
+
+    <!-- Client-Side Test Results (Paper 1) -->
+    <div id="clientTestSection" class="mb-4" style="display:none">
+        <h5 class="mb-3"><i class="bi bi-shield-exclamation"></i> Client-Side Downgrade Tests (Paper 1 Methodology)</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-dark">
+                <small class="text-muted">Cho et al., "Return of Version Downgrade Attack in the Era of TLS 1.3" (CoNEXT 2020)</small>
+            </div>
+            <div class="card-body" id="clientTestBody">
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Discovery Results -->
+    <div id="discoverySection" class="mb-4" style="display:none">
+        <h5 class="mb-3"><i class="bi bi-router text-danger"></i> Network Discovery Results</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <small class="text-muted">Discovered TLS-enabled devices on the local network</small>
+                <span class="badge bg-danger" id="discoveryCount">0 devices</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" id="discoveryTable">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Port</th>
+                                <th>TLS Version</th>
+                                <th>Certificate Subject</th>
+                                <th>Device Type</th>
+                                <th>Banner Hint</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Lab Report -->
+    <div id="labReportSection" class="mb-4" style="display:none">
+        <h5 class="mb-3"><i class="bi bi-motherboard text-success"></i> Virtual IoT Lab Report</h5>
+        <div class="row g-3 mb-3" id="labStatCards"></div>
+        <div class="card mb-3">
+            <div class="card-header bg-dark">
+                <small class="text-muted">Scan results for all emulated IoT device profiles</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" id="labResultsTable">
+                        <thead>
+                            <tr>
+                                <th>Device</th>
+                                <th>Type</th>
+                                <th>TLS Versions</th>
+                                <th>Downgrade Risk</th>
+                                <th>Grade</th>
+                                <th>Sentinel</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="labFindings" class="mb-3"></div>
+    </div>
+
+    <!-- Automated Stack Test Results -->
+    <div id="stackTestSection" class="mb-4" style="display:none">
+        <h5 class="mb-3"><i class="bi bi-shield-exclamation text-warning"></i> Automated Client Stack Tests</h5>
+        <div class="row g-3 mb-3" id="stackStatCards"></div>
+        <div class="card mb-3">
+            <div class="card-header bg-dark">
+                <small class="text-muted">Each TLS client library tested against 3 downgrade scenarios per Paper 1 methodology</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" id="stackTestTable">
+                        <thead>
+                            <tr>
+                                <th>Client Stack</th>
+                                <th>TLS 1.3 &rarr; 1.2</th>
+                                <th>TLS 1.3 &rarr; 1.1</th>
+                                <th>TLS 1.3 &rarr; 1.0</th>
+                                <th>Root Cause</th>
+                                <th>Verdict</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Scan Device Cards -->
+    <h5 class="mb-3"><i class="bi bi-hdd-network"></i> Server Scan Results (IoT Device as Server)</h5>
+    <div class="row g-3" id="deviceCards">
+        <div class="col-12 text-center text-muted py-5" id="emptyState">
+            <i class="bi bi-inbox display-1"></i>
+            <p class="mt-3">No scan results yet. Run <code>python scan.py server --target host:port</code> or click <strong>New Scan</strong>.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailTitle">Device Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Modal -->
+<div class="modal fade" id="scanModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-search"></i> New Scan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" id="scanCloseBtn"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Step 1: Scan Type Selection -->
+                <div id="scanStep1">
+                    <p class="text-muted mb-3">Choose what to scan:</p>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('server')" id="scanTypeServer" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-hdd-network fs-2 text-primary"></i>
+                                    <h6 class="mt-2 mb-1">Server Scan</h6>
+                                    <small class="text-muted">Scan a host for TLS versions, ciphers, downgrade</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('lab')" id="scanTypeLab" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-motherboard fs-2 text-success"></i>
+                                    <h6 class="mt-2 mb-1">Virtual IoT Lab</h6>
+                                    <small class="text-muted">Full lab: 12 devices + profiles + stacks (~2 min)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('stacks')" id="scanTypeStacks" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-shield-exclamation fs-2 text-warning"></i>
+                                    <h6 class="mt-2 mb-1">Client Stack Test</h6>
+                                    <small class="text-muted">Test TLS client libs for sentinel validation</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('profiles')" id="scanTypeProfiles" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-people fs-2 text-info"></i>
+                                    <h6 class="mt-2 mb-1">Cipher Preference</h6>
+                                    <small class="text-muted">Modern/Mixed/Legacy 3-profile experiment</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('discovery')" id="scanTypeDiscovery" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-router fs-2 text-danger"></i>
+                                    <h6 class="mt-2 mb-1">Network Discovery</h6>
+                                    <small class="text-muted">Scan a subnet for IoT devices with TLS</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('client_malicious')" id="scanTypeClient_malicious" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-bug fs-2" style="color:#e74c3c"></i>
+                                    <h6 class="mt-2 mb-1">Malicious Server</h6>
+                                    <small class="text-muted">Wait for IoT clients to test sentinel check</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('client_mitm')" id="scanTypeClient_mitm" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-diagram-3 fs-2" style="color:#e67e22"></i>
+                                    <h6 class="mt-2 mb-1">MITM Proxy</h6>
+                                    <small class="text-muted">Intercept + downgrade IoT client traffic</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('pdf')" id="scanTypePdf" style="cursor:pointer">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-file-earmark-pdf fs-2" style="color:#c0392b"></i>
+                                    <h6 class="mt-2 mb-1">Generate PDF</h6>
+                                    <small class="text-muted">Export full results report as PDF</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Server scan options -->
+                    <div id="serverOptions" class="scan-options" style="display:none">
+                        <hr>
+                        <h6>Target Details</h6>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Host / IP Address</label>
+                                <input type="text" class="form-control" id="scanHost" placeholder="e.g. 192.168.1.100 or www.google.com">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Port</label>
+                                <input type="number" class="form-control" id="scanPort" value="443">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Label</label>
+                                <input type="text" class="form-control" id="scanLabel" placeholder="IoT Camera">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Discovery options -->
+                    <div id="discoveryOptions" class="scan-options" style="display:none">
+                        <hr>
+                        <h6>Subnet to Scan</h6>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <label class="form-label">Subnet (CIDR)</label>
+                                <input type="text" class="form-control" id="scanSubnet" placeholder="e.g. 192.168.1.0/24">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ports</label>
+                                <input type="text" class="form-control" id="scanDiscPorts" value="443,8443,4443">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Timeout (s)</label>
+                                <input type="number" class="form-control" id="scanDiscTimeout" value="2" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Client malicious server options -->
+                    <div id="clientMaliciousOptions" class="scan-options" style="display:none">
+                        <hr>
+                        <h6>Malicious Server Settings</h6>
+                        <p class="text-muted small">Starts a TLS server that omits the downgrade sentinel. Direct IoT devices to connect to this machine.</p>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Listen Port</label>
+                                <input type="number" class="form-control" id="scanMalPort" value="4433">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Duration (seconds)</label>
+                                <input type="number" class="form-control" id="scanMalDuration" value="30">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Client MITM proxy options -->
+                    <div id="clientMitmOptions" class="scan-options" style="display:none">
+                        <hr>
+                        <h6>MITM Proxy Settings</h6>
+                        <p class="text-muted small">Intercepts IoT device traffic, rewrites ClientHello version, and strips sentinel.</p>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Target Host</label>
+                                <input type="text" class="form-control" id="scanMitmTarget" placeholder="api.vendor.com">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Target Port</label>
+                                <input type="number" class="form-control" id="scanMitmTargetPort" value="443">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Proxy Port</label>
+                                <input type="number" class="form-control" id="scanMitmProxyPort" value="8443">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Downgrade</label>
+                                <select class="form-select" id="scanMitmDowngrade">
+                                    <option value="TLSv1.2">TLS 1.2</option>
+                                    <option value="TLSv1.1">TLS 1.1</option>
+                                    <option value="TLSv1.0">TLS 1.0</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Duration</label>
+                                <input type="number" class="form-control" id="scanMitmDuration" value="30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Progress View -->
+                <div id="scanStep2" style="display:none">
+                    <div class="text-center mb-3">
+                        <div id="scanStatusIcon" class="mb-2">
+                            <div class="spinner-border text-primary" style="width:3rem;height:3rem" role="status"></div>
+                        </div>
+                        <h5 id="scanStatusTitle">Starting scan...</h5>
+                        <p class="text-muted" id="scanStatusSub"></p>
+                    </div>
+
+                    <div class="progress mb-3" style="height:8px">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="scanProgressBar" style="width:0%"></div>
+                    </div>
+
+                    <div class="bg-dark rounded p-3" style="max-height:250px;overflow-y:auto;font-family:monospace;font-size:0.8rem" id="scanLog">
+                    </div>
+
+                    <!-- Done summary (hidden initially) -->
+                    <div id="scanDoneSummary" style="display:none" class="mt-3">
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal" id="scanCancelBtn">Cancel</button>
+                <button class="btn btn-primary" onclick="startScan()" id="scanStartBtn" disabled>
+                    <i class="bi bi-play-fill"></i> Start Scan
+                </button>
+                <button class="btn btn-success" onclick="scanDoneClose()" id="scanDoneBtn" style="display:none">
+                    <i class="bi bi-check-lg"></i> Done - View Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>
