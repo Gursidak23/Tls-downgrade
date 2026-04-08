@@ -22,7 +22,7 @@
             <span class="badge bg-success bg-opacity-10 text-success me-2">
                 <i class="bi bi-shield-lock"></i> Authenticated
             </span>
-            <button class="btn btn-sm btn-outline-success" onclick="loadResults()">
+            <button class="btn btn-sm btn-outline-success" id="refreshBtn">
                 <i class="bi bi-arrow-clockwise"></i> Refresh
             </button>
             <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#scanModal">
@@ -276,7 +276,7 @@
                     <p class="text-muted mb-3">Choose what to scan:</p>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('server')" id="scanTypeServer" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="server" id="scanTypeServer" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-hdd-network fs-2 text-primary"></i>
                                     <h6 class="mt-2 mb-1">Server Scan</h6>
@@ -285,7 +285,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('lab')" id="scanTypeLab" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="lab" id="scanTypeLab" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-motherboard fs-2 text-success"></i>
                                     <h6 class="mt-2 mb-1">Virtual IoT Lab</h6>
@@ -294,7 +294,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('stacks')" id="scanTypeStacks" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="stacks" id="scanTypeStacks" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-shield-exclamation fs-2 text-warning"></i>
                                     <h6 class="mt-2 mb-1">Client Stack Test</h6>
@@ -303,7 +303,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('profiles')" id="scanTypeProfiles" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="profiles" id="scanTypeProfiles" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-people fs-2 text-info"></i>
                                     <h6 class="mt-2 mb-1">Cipher Preference</h6>
@@ -312,7 +312,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('discovery')" id="scanTypeDiscovery" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="discovery" id="scanTypeDiscovery" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-router fs-2 text-danger"></i>
                                     <h6 class="mt-2 mb-1">Network Discovery</h6>
@@ -321,7 +321,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('client_malicious')" id="scanTypeClient_malicious" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="client_malicious" id="scanTypeClient_malicious" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-bug fs-2" style="color:#e74c3c"></i>
                                     <h6 class="mt-2 mb-1">Malicious Server</h6>
@@ -330,7 +330,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('client_mitm')" id="scanTypeClient_mitm" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="client_mitm" id="scanTypeClient_mitm" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-diagram-3 fs-2" style="color:#e67e22"></i>
                                     <h6 class="mt-2 mb-1">MITM Proxy</h6>
@@ -339,7 +339,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-dark border-secondary scan-type-card" onclick="selectScanType('pdf')" id="scanTypePdf" style="cursor:pointer">
+                            <div class="card bg-dark border-secondary scan-type-card" data-scan-type="pdf" id="scanTypePdf" style="cursor:pointer">
                                 <div class="card-body text-center py-3">
                                     <i class="bi bi-file-earmark-pdf fs-2" style="color:#c0392b"></i>
                                     <h6 class="mt-2 mb-1">Generate PDF</h6>
@@ -462,10 +462,10 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal" id="scanCancelBtn">Cancel</button>
-                <button class="btn btn-primary" onclick="startScan()" id="scanStartBtn" disabled>
+                <button class="btn btn-primary" id="scanStartBtn" disabled>
                     <i class="bi bi-play-fill"></i> Start Scan
                 </button>
-                <button class="btn btn-success" onclick="scanDoneClose()" id="scanDoneBtn" style="display:none">
+                <button class="btn btn-success" id="scanDoneBtn" style="display:none">
                     <i class="bi bi-check-lg"></i> Done - View Results
                 </button>
             </div>

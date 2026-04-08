@@ -458,6 +458,7 @@ function _clientStatCard(label, value, icon, colorClass = '') {
 }
 
 let selectedScanType = null;
+let lastCompletedScanType = null;
 let scanPollTimer = null;
 
 function selectScanType(type) {
@@ -541,6 +542,7 @@ async function startScan() {
             return;
         }
 
+        lastCompletedScanType = selectedScanType;
         document.getElementById('scanStep1').style.display = 'none';
         document.getElementById('scanStep2').style.display = 'block';
         document.getElementById('scanStartBtn').style.display = 'none';
@@ -652,13 +654,36 @@ function pollScanStatus() {
 function scanDoneClose() {
     if (scanPollTimer) { clearInterval(scanPollTimer); scanPollTimer = null; }
     const targetId = lastScanTargetId;
+    const scanType = lastCompletedScanType;
     bootstrap.Modal.getInstance(document.getElementById('scanModal')).hide();
     resetScanModal();
-    loadResults(targetId);
+
+    const sectionMap = {
+        lab: 'labReportSection',
+        stacks: 'stackTestSection',
+        profiles: 'profileSection',
+        discovery: 'discoverySection',
+        client_malicious: 'clientTestSection',
+        client_mitm: 'clientTestSection',
+    };
+
+    if (scanType === 'server' && targetId) {
+        loadResults(targetId);
+    } else if (sectionMap[scanType]) {
+        loadResults().then(() => {
+            setTimeout(() => {
+                const el = document.getElementById(sectionMap[scanType]);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 500);
+        });
+    } else {
+        loadResults();
+    }
 }
 
 function resetScanModal() {
     selectedScanType = null;
+    lastCompletedScanType = null;
     document.getElementById('scanStep1').style.display = 'block';
     document.getElementById('scanStep2').style.display = 'none';
     document.getElementById('scanStartBtn').style.display = 'inline-block';
@@ -882,7 +907,7 @@ function renderDeviceCards() {
 
         return `
         <div class="col-xl-6 fade-in" style="animation-delay: ${Math.min(i, 10) * 0.05}s">
-            <div class="card device-card" onclick="showDetail(${i})" style="${cardOpacity}${cardBorder}">
+            <div class="card device-card" data-detail-index="${i}" style="cursor:pointer;${cardOpacity}${cardBorder}">
                 <div class="card-body">
                     <div class="d-flex align-items-start gap-3">
                         <div class="grade-badge ${gradeClass}">${grade}</div>
@@ -908,6 +933,10 @@ function renderDeviceCards() {
             </div>
         </div>`;
     }).join('');
+
+    container.querySelectorAll('[data-detail-index]').forEach(card => {
+        card.addEventListener('click', () => showDetail(parseInt(card.dataset.detailIndex)));
+    });
 }
 
 function gradeToClass(grade) {
@@ -1101,4 +1130,12 @@ function featureBadge(enabled, label) {
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadResults();
+
+    document.getElementById('refreshBtn')?.addEventListener('click', () => loadResults());
+    document.getElementById('scanStartBtn')?.addEventListener('click', () => startScan());
+    document.getElementById('scanDoneBtn')?.addEventListener('click', () => scanDoneClose());
+
+    document.querySelectorAll('.scan-type-card[data-scan-type]').forEach(card => {
+        card.addEventListener('click', () => selectScanType(card.dataset.scanType));
+    });
 });
