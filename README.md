@@ -307,3 +307,4 @@ written permission to test. Unauthorized interception of network traffic is ille
    of TLS 1.3. *ACM CoNEXT*, 157-168. DOI: 10.1145/3386367.3431310
 2. RFC 8446 — The Transport Layer Security (TLS) Protocol Version 1.3
 3. RFC 7507 — TLS Fallback Signaling Cipher Suite Value (SCSV)
+# Tls-downgrade
