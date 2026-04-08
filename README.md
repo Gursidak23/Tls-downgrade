@@ -308,3 +308,4 @@ written permission to test. Unauthorized interception of network traffic is ille
 2. RFC 8446 — The Transport Layer Security (TLS) Protocol Version 1.3
 3. RFC 7507 — TLS Fallback Signaling Cipher Suite Value (SCSV)
 # Tls-downgrade
+# Tls-downgrade
