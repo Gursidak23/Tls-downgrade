@@ -65,7 +65,7 @@ if "$PYTHON" -c "import flask, cryptography, click, yaml, colorama, tabulate, ji
     pass "All Python dependencies installed"
 else
     info "Installing dependencies..."
-    pip install -r requirements.txt
+    "$PYTHON" -m pip install -r requirements.txt
 fi
 
 header "Test 1/5: Virtual IoT Lab (12 devices, 3 phases)"
@@ -82,8 +82,13 @@ run_test "Full Demo" "$PYTHON" run_demo.py
 
 header "Test 5/5: Dashboard API Endpoints"
 DASH_RESULT=$("$PYTHON" -c "
+from datetime import datetime, timedelta
 from src.dashboard.app import create_app
-c = create_app().test_client()
+app = create_app()
+c = app.test_client()
+with c.session_transaction() as s:
+    s['authenticated'] = True
+    s['expires_at'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
 eps = ['/', '/api/results', '/api/client-results', '/api/profile-results',
        '/api/discovery', '/api/stack-results', '/api/lab-results', '/api/vlab-profiles']
 ok = sum(1 for e in eps if c.get(e).status_code == 200)
