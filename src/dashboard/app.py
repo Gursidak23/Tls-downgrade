@@ -28,6 +28,7 @@ import traceback
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from logging.handlers import RotatingFileHandler
+from urllib.parse import urlparse
 
 import bcrypt
 from dotenv import load_dotenv
@@ -218,13 +219,34 @@ def _login_required(f):
 def _check_csrf():
     """Verify Origin header on state-changing requests to mitigate CSRF."""
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
-        origin = request.headers.get("Origin", "")
+        origin = request.headers.get("Origin", "").strip()
         if origin:
-            allowed = {
-                f"http://127.0.0.1:{os.environ.get('DASHBOARD_PORT', '5000')}",
-                f"http://localhost:{os.environ.get('DASHBOARD_PORT', '5000')}",
-            }
-            if origin not in allowed:
+            # Enforce same-origin POSTs against the active request host,
+            # not a static port value that can drift from runtime.
+            parsed_origin = urlparse(origin)
+            if not parsed_origin.scheme or not parsed_origin.netloc:
+                abort(403, description="CSRF: Invalid Origin")
+
+            current_origin = request.host_url.rstrip("/").lower()
+            allowed = {current_origin}
+
+            # Backward-compatibility for localhost/127.0.0.1 startup defaults.
+            cfg_port = os.environ.get("DASHBOARD_PORT", "5000")
+            allowed.update({
+                f"http://127.0.0.1:{cfg_port}",
+                f"http://localhost:{cfg_port}",
+            })
+
+            # Optional comma-separated explicit trusted origins.
+            # Example: CSRF_TRUSTED_ORIGINS="https://dash.example.com"
+            extra = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+            for item in extra.split(","):
+                candidate = item.strip().rstrip("/").lower()
+                if candidate:
+                    allowed.add(candidate)
+
+            normalized_origin = f"{parsed_origin.scheme}://{parsed_origin.netloc}".lower()
+            if normalized_origin not in allowed:
                 abort(403, description="CSRF: Origin mismatch")
 
 
